@@ -36,11 +36,11 @@ type BodyWeightEntry = {
 type BodyMeasureEntry = {
   id: string;
   dateISO: string; // YYYY-MM-DD
-  waistCm?: number;
-  chestCm?: number;
-  armCm?: number;
-  thighCm?: number;
-  hipsCm?: number;
+  waistCm?: number; // liemuo
+  chestCm?: number; // krūtinė
+  armCm?: number; // ranka
+  thighCm?: number; // šlaunis
+  hipsCm?: number; // klubai
   note?: string;
 };
 
@@ -51,6 +51,7 @@ type View = "treniruote" | "kunas";
 const LOGS_KEY = "gym_logs_v4";
 const EXERCISES_KEY = "gym_exercises_v4";
 const SHORTLIST_KEY = "gym_shortlist_v4";
+
 const BODY_WEIGHT_KEY = "gym_body_weight_v1";
 const BODY_MEASURES_KEY = "gym_body_measures_v1";
 
@@ -72,7 +73,7 @@ const DEFAULT_EXERCISES: Exercise[] = [
 
 /* ================= PAGALBINĖS ================= */
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const todayKey = () => new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
 const load = <T,>(key: string, fallback: T): T => {
   if (typeof window === "undefined") return fallback;
@@ -130,6 +131,7 @@ function cn(...classes: Array<string | false | undefined | null>) {
 }
 
 function groupLogsByDayGeneric<T extends { dateISO?: string; dateTimeISO?: string }>(entries: T[]) {
+  // entries turi būti surūšiuoti nuo naujausių iki seniausių
   const groups: Array<{ day: string; items: T[] }> = [];
   for (const e of entries) {
     const iso = (e as any).dateISO ?? (e as any).dateTimeISO ?? "";
@@ -139,14 +141,6 @@ function groupLogsByDayGeneric<T extends { dateISO?: string; dateTimeISO?: strin
     else last.items.push(e);
   }
   return groups;
-}
-
-function toNumOrUndef(s: string): number | undefined {
-  const t = s.trim();
-  if (!t) return undefined;
-  const n = Number(t);
-  if (!Number.isFinite(n) || n <= 0) return undefined;
-  return n;
 }
 
 /* ================= UI ATOMAI ================= */
@@ -297,9 +291,10 @@ function TabButton({
 /* ================= PUSLAPIS ================= */
 
 export default function Page() {
+  // view
   const [view, setView] = useState<View>("treniruote");
 
-  // treniruotė
+  // treniruote
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [shortlist, setShortlist] = useState<string[]>([]);
@@ -324,7 +319,7 @@ export default function Page() {
   const [bodyWeights, setBodyWeights] = useState<BodyWeightEntry[]>([]);
   const [bodyMeasures, setBodyMeasures] = useState<BodyMeasureEntry[]>([]);
 
-  const [bwWeight, setBwWeight] = useState("");
+  const [bwWeight, setBwWeight] = useState(""); // įvedamas svoris
   const [bwNote, setBwNote] = useState("");
 
   const [mWaist, setMWaist] = useState("");
@@ -335,6 +330,7 @@ export default function Page() {
   const [mNote, setMNote] = useState("");
 
   useEffect(() => {
+    // pratimai
     const loadedExercises = load<Exercise[]>(EXERCISES_KEY, []);
     const initialExercises = loadedExercises.length ? loadedExercises : DEFAULT_EXERCISES;
     setExercises(initialExercises);
@@ -345,11 +341,15 @@ export default function Page() {
     const allShortlists = load<Record<string, string[]>>(SHORTLIST_KEY, {});
     setShortlist(allShortlists[todayKey()] ?? []);
 
+    // kūnas
     const bw = load<BodyWeightEntry[]>(BODY_WEIGHT_KEY, []);
     const bm = load<BodyMeasureEntry[]>(BODY_MEASURES_KEY, []);
+    // laikom naujausius viršuje
     setBodyWeights([...bw].sort((a, b) => b.dateISO.localeCompare(a.dateISO)));
     setBodyMeasures([...bm].sort((a, b) => b.dateISO.localeCompare(a.dateISO)));
   }, []);
+
+  /* ======= TRENIRUOTĖ: skaičiavimai ======= */
 
   const selectedExercise = useMemo(
     () => exercises.find((e) => e.id === selectedId) ?? null,
@@ -392,7 +392,6 @@ export default function Page() {
 
       const latestDay = sorted[0].dateTimeISO.slice(0, 10);
       const sameDay = sorted.filter((x) => x.dateTimeISO.slice(0, 10) === latestDay);
-
       const ordered = [...sameDay].sort((a, b) => a.weightKg - b.weightKg);
       const setsText = ordered.map((x) => `${x.weightKg}×${x.reps}`).join(" • ");
 
@@ -410,11 +409,15 @@ export default function Page() {
 
   const groupedHistoryForSelected = useMemo(() => groupLogsByDayGeneric(historyForSelected), [historyForSelected]);
 
+  /* ======= KŪNAS: skaičiavimai ======= */
+
   const latestBodyWeight = bodyWeights[0] ?? null;
   const groupedBodyWeights = useMemo(() => groupLogsByDayGeneric(bodyWeights), [bodyWeights]);
 
   const latestMeasures = bodyMeasures[0] ?? null;
   const groupedBodyMeasures = useMemo(() => groupLogsByDayGeneric(bodyMeasures), [bodyMeasures]);
+
+  /* ================= FUNKCIJOS ================= */
 
   function toggleShortlist(id: string) {
     const next = shortlist.includes(id) ? shortlist.filter((x) => x !== id) : [...shortlist, id];
@@ -485,6 +488,7 @@ export default function Page() {
   }
 
   function prefillBodyFromLast() {
+    // patogumas: užpildom iš paskutinio įrašo (jei yra)
     if (latestBodyWeight) setBwWeight(String(latestBodyWeight.weightKg));
     if (latestMeasures) {
       setMWaist(latestMeasures.waistCm != null ? String(latestMeasures.waistCm) : "");
@@ -511,6 +515,14 @@ export default function Page() {
     save(BODY_WEIGHT_KEY, next);
 
     setBwNote("");
+  }
+
+  function toNumOrUndef(s: string): number | undefined {
+    const t = s.trim();
+    if (!t) return undefined;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n <= 0) return undefined;
+    return n;
   }
 
   function saveMeasures() {
@@ -542,8 +554,11 @@ export default function Page() {
     setMNote("");
   }
 
+  /* ================= RENDER ================= */
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {/* HEADER */}
       <header className="sticky top-0 z-20 border-b border-zinc-800 bg-zinc-950/85 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 py-4">
           <div className="flex items-center justify-between gap-3">
@@ -579,6 +594,7 @@ export default function Page() {
             </div>
           </div>
 
+          {/* TRENIRUOTĖ: filtrai */}
           {view === "treniruote" && (
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="md:col-span-1">
@@ -611,7 +627,9 @@ export default function Page() {
         </div>
       </header>
 
+      {/* MAIN */}
       <main className="mx-auto max-w-5xl px-4 py-4">
+        {/* ======= VIEW: TRENIRUOTĖ ======= */}
         {view === "treniruote" && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* KAIRĖ */}
@@ -743,6 +761,7 @@ export default function Page() {
                     </SecondaryButton>
                   </div>
 
+                  {/* LOG */}
                   <div className="rounded-3xl bg-zinc-900/50 p-4 ring-1 ring-zinc-800">
                     <div className="mb-3 flex items-center justify-between">
                       <div className="text-sm font-semibold">Įrašyti setą</div>
@@ -769,7 +788,12 @@ export default function Page() {
                       <Input label="Svoris (kg)" value={weightKg} onChange={setWeightKg} placeholder="pvz. 60" inputMode="decimal" />
                       <Input label="Pakartojimai" value={reps} onChange={setReps} placeholder="pvz. 8" inputMode="numeric" />
                       <div className="col-span-2">
-                        <Input label="Komentaras (nebūtina)" value={comment} onChange={setComment} placeholder="pvz. lengva / lėtas tempas…" />
+                        <Input
+                          label="Komentaras (nebūtina)"
+                          value={comment}
+                          onChange={setComment}
+                          placeholder="pvz. lengva / lėtas tempas…"
+                        />
                       </div>
                     </div>
 
@@ -794,6 +818,7 @@ export default function Page() {
                     </div>
                   </div>
 
+                  {/* ISTORIJA */}
                   <div className="rounded-3xl bg-zinc-900/50 p-4 ring-1 ring-zinc-800">
                     <div className="mb-3 text-sm font-semibold">Istorija</div>
 
@@ -813,7 +838,9 @@ export default function Page() {
                                 {g.items.map((l: any) => (
                                   <div key={l.id} className="rounded-2xl bg-zinc-950/30 p-3 ring-1 ring-zinc-800">
                                     <div className="flex items-baseline justify-between gap-3">
-                                      <div className="font-semibold text-zinc-100">{l.weightKg} kg × {l.reps}</div>
+                                      <div className="font-semibold text-zinc-100">
+                                        {l.weightKg} kg × {l.reps}
+                                      </div>
                                       <div className="text-xs text-zinc-500">{fmtDateTime(l.dateTimeISO)}</div>
                                     </div>
                                     {l.comment && <div className="mt-1 text-sm text-zinc-300">{l.comment}</div>}
@@ -825,6 +852,10 @@ export default function Page() {
                         </div>
                       </div>
                     )}
+
+                    {groupedHistoryForSelected.length > 14 && (
+                      <div className="mt-2 text-xs text-zinc-500">Rodomos paskutinės 14 dienų grupių.</div>
+                    )}
                   </div>
                 </div>
               )}
@@ -832,6 +863,7 @@ export default function Page() {
           </div>
         )}
 
+        {/* ======= VIEW: KŪNAS ======= */}
         {view === "kunas" && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* SVORIS */}
@@ -856,8 +888,19 @@ export default function Page() {
               )}
 
               <div className="mt-3 grid gap-2">
-                <Input label="Svoris (kg)" value={bwWeight} onChange={setBwWeight} placeholder="pvz. 84.2" inputMode="decimal" />
-                <Input label="Pastaba (nebūtina)" value={bwNote} onChange={setBwNote} placeholder="pvz. ryte / po treniruotės…" />
+                <Input
+                  label="Svoris (kg)"
+                  value={bwWeight}
+                  onChange={setBwWeight}
+                  placeholder="pvz. 84.2"
+                  inputMode="decimal"
+                />
+                <Input
+                  label="Pastaba (nebūtina)"
+                  value={bwNote}
+                  onChange={setBwNote}
+                  placeholder="pvz. po treniruotės / ryte nevalgęs…"
+                />
               </div>
 
               <div className="mt-3 flex gap-2">
@@ -869,6 +912,7 @@ export default function Page() {
                 </SecondaryButton>
               </div>
 
+              {/* Istorija */}
               <div className="mt-4 rounded-3xl bg-zinc-900/50 p-4 ring-1 ring-zinc-800">
                 <div className="mb-2 text-sm font-semibold">Svorio istorija</div>
                 {bodyWeights.length === 0 ? (
@@ -898,6 +942,9 @@ export default function Page() {
                     </div>
                   </div>
                 )}
+                {groupedBodyWeights.length > 30 && (
+                  <div className="mt-2 text-xs text-zinc-500">Rodomos paskutinės 30 dienų grupių.</div>
+                )}
               </div>
             </section>
 
@@ -910,6 +957,24 @@ export default function Page() {
                 </div>
                 <Badge>{bodyMeasures.length} įrašai</Badge>
               </div>
+
+              {latestMeasures && (
+                <div className="mt-3 rounded-2xl bg-zinc-900/50 p-3 ring-1 ring-zinc-800">
+                  <div className="text-xs text-zinc-400">Paskutiniai</div>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <div className="text-sm font-semibold text-zinc-100">{latestMeasures.dateISO}</div>
+                    <div className="text-xs text-zinc-500">{fmtDate(latestMeasures.dateISO)}</div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-300">
+                    {latestMeasures.waistCm != null && <Badge>Liemuo: {latestMeasures.waistCm} cm</Badge>}
+                    {latestMeasures.chestCm != null && <Badge>Krūtinė: {latestMeasures.chestCm} cm</Badge>}
+                    {latestMeasures.armCm != null && <Badge>Ranka: {latestMeasures.armCm} cm</Badge>}
+                    {latestMeasures.thighCm != null && <Badge>Šlaunis: {latestMeasures.thighCm} cm</Badge>}
+                    {latestMeasures.hipsCm != null && <Badge>Klubai: {latestMeasures.hipsCm} cm</Badge>}
+                  </div>
+                  {latestMeasures.note && <div className="mt-2 text-sm text-zinc-300">{latestMeasures.note}</div>}
+                </div>
+              )}
 
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <Input label="Liemuo (cm)" value={mWaist} onChange={setMWaist} placeholder="pvz. 86" inputMode="decimal" />
@@ -926,11 +991,22 @@ export default function Page() {
                 <PrimaryButton onClick={saveMeasures} className="flex-1 py-3 text-base">
                   Išsaugoti matmenis
                 </PrimaryButton>
-                <SecondaryButton onClick={() => { setMWaist(""); setMChest(""); setMArm(""); setMThigh(""); setMHips(""); setMNote(""); }} className="py-3">
+                <SecondaryButton
+                  onClick={() => {
+                    setMWaist("");
+                    setMChest("");
+                    setMArm("");
+                    setMThigh("");
+                    setMHips("");
+                    setMNote("");
+                  }}
+                  className="py-3"
+                >
                   Išvalyti
                 </SecondaryButton>
               </div>
 
+              {/* Matmenų istorija */}
               <div className="mt-4 rounded-3xl bg-zinc-900/50 p-4 ring-1 ring-zinc-800">
                 <div className="mb-2 text-sm font-semibold">Matmenų istorija</div>
                 {bodyMeasures.length === 0 ? (
@@ -944,6 +1020,7 @@ export default function Page() {
                             <div className="text-sm font-semibold text-zinc-100">{fmtDate(g.day)}</div>
                             <div className="text-xs text-zinc-500">{g.day}</div>
                           </div>
+
                           <div className="grid gap-2">
                             {(g.items as any as BodyMeasureEntry[]).map((it) => (
                               <div key={it.id} className="rounded-2xl bg-zinc-950/30 p-3 ring-1 ring-zinc-800">
@@ -962,6 +1039,9 @@ export default function Page() {
                       ))}
                     </div>
                   </div>
+                )}
+                {groupedBodyMeasures.length > 30 && (
+                  <div className="mt-2 text-xs text-zinc-500">Rodomos paskutinės 30 dienų grupių.</div>
                 )}
               </div>
             </section>
