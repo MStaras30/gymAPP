@@ -1,3 +1,7 @@
+<div style={{ color: "red", fontSize: 32 }}>
+  HOSTINGER TEST 123
+</div>
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
