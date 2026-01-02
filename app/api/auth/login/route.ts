@@ -36,10 +36,11 @@ export async function POST(req: Request) {
   const res = NextResponse.json({ success: true })
 
   res.cookies.set("session", user.id, {
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-  })
+  httpOnly: true,
+  path: "/",
+  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+});
 
   return res
 }
