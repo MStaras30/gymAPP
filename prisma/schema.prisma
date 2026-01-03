@@ -19,3 +19,23 @@ model User {
   password  String
   createdAt DateTime @default(now())
 }
+
+model EmailVerification {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  codeHash     String
+  expiresAt    DateTime
+  attempts     Int      @default(0)
+  lastSentAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+}
+model PasswordReset {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  lastSentAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+}

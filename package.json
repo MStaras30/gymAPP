@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "next dev",
-  "build": "prisma generate && next build",
-  "start": "next start -p $PORT"
-},
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start -p $PORT"
+  },
   "dependencies": {
     "@prisma/client": "^6.19.1",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -22,6 +22,7 @@
     "mysql2": "^3.16.0",
     "next": "16.1.1",
     "next-themes": "^0.4.6",
+    "nodemailer": "^7.0.12",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sonner": "^1.5.0",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "25.0.3",
+    "@types/nodemailer": "^7.0.4",
     "@types/react": "19.2.7",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
