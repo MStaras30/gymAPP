@@ -59,7 +59,9 @@ export async function POST(req: Request) {
     await sendVerificationCode(email, code);
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Serverio klaida" }, { status: 500 });
-  }
+} catch (err) {
+  const id = crypto.randomUUID();
+  console.error(`[AUTH_REGISTER][${id}]`, err);
+  return NextResponse.json({ error: `Serverio klaida (${id})` }, { status: 500 });
+}
 }

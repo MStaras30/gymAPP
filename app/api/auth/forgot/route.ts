@@ -44,10 +44,12 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!user) {
-      // apsimetam, kad ok
-      return NextResponse.json({ success: true });
-    }
+if (!user) {
+  return NextResponse.json(
+    { error: "Tokiu el. paštu vartotojo nėra" },
+    { status: 404 }
+  );
+}
 
     const code = genCode();
     const codeHash = sha256(code);
@@ -62,7 +64,9 @@ export async function POST(req: Request) {
     await sendPasswordResetCode(email, code);
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Serverio klaida" }, { status: 500 });
-  }
+} catch (err) {
+  const id = crypto.randomUUID();
+  console.error(`[FORGOT][${id}]`, err);
+  return NextResponse.json({ error: `Serverio klaida (${id})` }, { status: 500 });
+}
 }

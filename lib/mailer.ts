@@ -15,7 +15,7 @@ export async function sendVerificationCode(to: string, code: string) {
   await mailer.sendMail({
     from,
     to,
-    subject: "Gym Log patvirtinimo kodas",
+    subject: "MSTARAS.LT Gym Log patvirtinimo kodas",
     text: `Tavo patvirtinimo kodas: ${code}\n\nKodas galioja 10 minučių.`,
   });
 }
@@ -24,7 +24,7 @@ export async function sendPasswordResetCode(to: string, code: string) {
   await mailer.sendMail({
     from,
     to,
-    subject: "Gym Log slaptažodžio atstatymo kodas",
+    subject: "MSTARAS.LT Gym Log slaptažodžio atstatymo kodas",
     text: `Slaptažodžio atstatymo kodas: ${code}\n\nKodas galioja 10 minučių.`,
   });
 }
