@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
 
 function sha256(s: string) {
   return crypto.createHash("sha256").update(s).digest("hex");
