@@ -18,6 +18,9 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+
+  logs      ExerciseLog[]
+  exercises Exercise[] @relation("UserExercises")
 }
 
 model EmailVerification {
@@ -39,3 +42,73 @@ model PasswordReset {
   lastSentAt DateTime @default(now())
   createdAt  DateTime @default(now())
 }
+enum Equipment {
+  machine
+  cable
+  dumbbell
+  barbell
+  bodyweight
+  other
+}
+
+enum Muscle {
+  chest
+  back
+  legs
+  shoulders
+  arms
+  core
+  fullbody
+  other
+}
+
+enum ExerciseVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+model Exercise {
+  id         String            @id @default(cuid())
+  name       String
+  equipment  Equipment
+  muscle     Muscle
+  notes      String?
+  imageUrl   String?
+
+  visibility ExerciseVisibility @default(PUBLIC)
+
+  // jei PRIVATE – priklauso konkrečiam useriui
+  ownerId    String?
+  owner      User?             @relation("UserExercises", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  // admin patvirtinimas ateičiai
+  approvedAt DateTime?
+  approvedBy String?
+
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  logs       ExerciseLog[]
+
+  @@index([visibility])
+  @@index([ownerId])
+  @@index([name])
+}
+
+model ExerciseLog {
+  id         String   @id @default(cuid())
+  userId     String
+  exerciseId String
+  dateTime   DateTime @default(now())
+
+  weightKg   Decimal  @db.Decimal(7,3) // ✅ 3 skaičiai po kablelio
+  reps       Int
+  comment    String?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dateTime])
+  @@index([exerciseId, dateTime])
+}
+

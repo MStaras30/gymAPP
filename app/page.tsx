@@ -1,14 +1,9 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { requireUserId } from "@/lib/auth";
 import HomeClient from "./HomeClient";
 
 export default async function Page() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get("session")?.value;
-
-  if (!session) {
-    redirect("/login");
-  }
-
+  const userId = await requireUserId();
+  if (!userId) redirect("/login");
   return <HomeClient />;
 }
