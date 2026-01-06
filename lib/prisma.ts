@@ -1,16 +1,15 @@
-import "server-only"
-import { PrismaClient } from "@prisma/client"
+import "server-only";
+import { PrismaClient } from "@prisma/client";
+import { applyRuntimeEnv } from "@/lib/runtimeEnv";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
+applyRuntimeEnv(); // <- labai svarbu prieš PrismaClient
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["error"],
-  })
+  new PrismaClient({ log: ["error"] });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma
+  globalForPrisma.prisma = prisma;
 }
